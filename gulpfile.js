@@ -102,7 +102,7 @@ var bundle = require('./package.json'),
 /**
  * @type {!string}
  */
-bundle.main = bundle.main.split('.').slice(0, -2).join('.');
+bundle.main = path.basename(path.basename(bundle.main, '.js'), '.min');
 
 gulp = gulp = require('gulp-help')(gulp, {
   description: 'Display this help text'
@@ -133,8 +133,10 @@ var settings = {
     'bower_components/closure-angularjs-q_templated-externs/index.js',
     'bower_components/closure-angularjs-http-promise_templated-externs/index.js'
   ],
-  sources: [
+  externalSources: [
     'bower_components/closure-library/closure/goog/base.js',
+  ],
+  sources: [
     bundle.directories.source + '/*.js'
   ],
   release: /** @type {string} */ (bundle.directories.release)
@@ -173,7 +175,7 @@ gulp.task('compile', false, [], function() {
     flags.create_source_map = path.join(dest, sourcemap);
     flags.output_wrapper += '\n//# sourceMappingURL=' + sourcemap;
   }
-  return gulp.src(settings.sources)
+  return gulp.src(settings.externalSources.concat(settings.sources))
       .pipe(ccompiler({
         compilerPath: settings.compiler,
         fileName: path.join(dest, (isProduction() ? '' : settings.prefixes.dev) + settings.output.minified),
