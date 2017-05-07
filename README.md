@@ -107,6 +107,13 @@ caretAwareController.setPosition(pos)
  * @return {{start: !number, end: !number, length: !number, text: !string}}
  */
 caretAwareController.getSelection()
+/**
+ * Replace text of current selection
+ *
+ * @param {!string} text
+ * @return {!leodido.controller.Caret}
+ */
+caretAwareController.setSelectionText(text)
 ```
 
 #### Note
