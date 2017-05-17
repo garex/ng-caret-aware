@@ -17,62 +17,84 @@
   "devDependencies": {
     "bower": "^1.3.12",
     "coveralls": "^2.11.2",
-    "gulp-coveralls": "^0.1.4",
     "del": "^1.1.1",
     "gulp": "^3.8.11",
     "gulp-bump": "^0.2.2",
     "gulp-closure-compiler": "^0.2.19",
-    "lcov-parse": "0.0.9",
+    "gulp-coveralls": "^0.1.4",
     "gulp-debug": "^2.0.1",
     "gulp-gjslint": "^0.1.4",
     "gulp-help": "^1.3.3",
     "gulp-jsbeautifier": "0.0.5",
     "gulp-json-editor": "^2.2.1",
-    "gulp-protractor": "0.0.12",
     "gulp-rename": "^1.2.2",
     "gulp-util": "~3.0.4",
-    "gulp-webserver": "^0.9.0",
+    "http-server": "^0.10.0",
     "jasmine-core": "2.3.0",
     "jasmine-spec-reporter": "^2.1.0",
-    "karma": "^0.12.31",
-    "karma-chrome-launcher": "^0.1.7",
+    "karma": "^1.7.0",
+    "karma-chrome-launcher": "^2.1.1",
     "karma-coverage": "^0.3.1",
-    "karma-firefox-launcher": "^0.1.4",
-    "karma-jasmine": "^0.3.5",
-    "karma-phantomjs-launcher": "^0.1.4",
+    "karma-firefox-launcher": "^1.0.1",
+    "karma-jasmine": "^1.1.0",
+    "karma-phantomjs-launcher": "^1.0.4",
     "karma-spec-reporter": "0.0.16",
+    "lcov-parse": "^0.0.10",
     "minimist": "^1.1.0",
     "node.extend": "^1.1.3",
-    "protractor": "^2.0.0",
-    "run-sequence": "^1.0.2"
+    "phantomjs-prebuilt": "^2.1.14",
+    "protractor": "^5.1.1",
+    "run-sequence": "^1.0.2",
+    "shx": "^0.2.2"
   },
   "scripts": {
-    "postinstall": "./node_modules/.bin/bower install",
-    "production": "./node_modules/.bin/gulp build --env production --banner",
-    "development": "./node_modules/.bin/gulp build --env development --banner",
-    "release": "npm run development && npm run production",
-    "unit": "./node_modules/.bin/gulp karma",
-    "e2e": "./node_modules/.bin/gulp protractor"
+    "clean:deps": "shx rm -f node_modules browser_components",
+    "clean:logs": "shx rm -f *.log",
+    "preclean": "npm run clean:logs",
+    "postclean": "npm run clean:deps",
+    "wait:webdriver": "while ! nc -z 127.0.0.1 4444; do sleep 1; done",
+    "clear:webdriver": "fuser -k -n tcp 4444",
+    "wait:server": "while ! nc -z 127.0.0.1 $npm_package_config_server_port; do sleep 1; done",
+    "clear:server": "fuser -k -n tcp $npm_package_config_server_port",
+    "webdriver:up": "webdriver-manager update",
+    "webdriver:go": "webdriver-manager start",
+    "protractor": "protractor $npm_package_config_dir_test/protractor.conf.js",
+
+    "deps": "bower install",
+    "clean": "shx rm -rf $npm_package_config_dir_dist $npm_package_config_dir_coverage",
+    "server": "http-server -p $npm_package_config_server_port .",
+    "production": "gulp build --env production --banner",
+    "development": "gulp build --env development --banner",
+    "compile": "npm run development && npm run production",
+    "test": "karma start $npm_package_config_dir_test/karma.conf.js",
+    "e2e": "$npm_package_config_dir_test/e2e.sh"
   },
   "keywords": [
     "caret",
     "cursor",
+    "position",
+    "selection",
     "input",
     "textarea",
     "angular",
     "ng",
     "directive",
+    "controller",
     "closure",
     "gulp"
   ],
-  "directories": {
-    "source": "./lib",
-    "dist": "./dist",
-    "example": "./example",
-    "unit": "./test/unit",
-    "e2e": "./test/e2e"
-  },
-  "server": {
-    "port": 8000
+  "config": {
+    "server": {
+      "port": 8000
+    },
+    "dir": {
+      "source": "lib",
+      "dist": "dist",
+      "example": "example",
+      "test": "test",
+      "unit": "test/unit",
+      "e2e": "test/e2e",
+      "coverage": "coverage"
+    }
   }
 }

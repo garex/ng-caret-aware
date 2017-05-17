@@ -1,11 +1,12 @@
 'use strict';
 
-var bundle = require('./package.json');
+var path = require('path');
+var config = require(path.join(__dirname, '..', 'package.json')).config;
 
-module.exports = function(config) {
+module.exports = function(opts) {
   var cfg = {
     // base path that will be used to resolve all patterns (eg. files, exclude)
-    basePath: './',
+    basePath: path.join(__dirname, '..'),
 
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
@@ -19,13 +20,13 @@ module.exports = function(config) {
       'bower_components/closure-library/closure/goog/base.js',
       'bower_components/closure-library/closure/goog/deps.js',
 
-      'lib/constants.js',
-      'lib/selection.typedef.js',
-      'lib/caret.controller.js',
-      'lib/caretaware.directive.js',
-      'lib/module.js',
+      path.join(config.dir.source, 'constants.js'),
+      path.join(config.dir.source, 'selection.typedef.js'),
+      path.join(config.dir.source, 'caret.controller.js'),
+      path.join(config.dir.source, 'caretaware.directive.js'),
+      path.join(config.dir.source, 'module.js'),
 
-      bundle.directories.unit + '/**/*.spec.js'
+      path.join(config.dir.unit, '**', '*.spec.js')
     ],
 
     // list of files to exclude
@@ -43,7 +44,7 @@ module.exports = function(config) {
     reporters: ['spec', 'coverage'],
 
     coverageReporter: {
-      dir: 'coverage',
+      dir: config.dir.coverage,
       reporters: [
         { type: 'lcov', subdir: '.' },
         { type: 'lcovonly', subdir: '.', file: 'lcov.txt' }
@@ -71,5 +72,5 @@ module.exports = function(config) {
     singleRun: true
   };
 
-  config.set(cfg);
+  opts.set(cfg);
 };

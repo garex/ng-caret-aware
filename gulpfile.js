@@ -1,6 +1,7 @@
 'use strict';
 
 var gulp = require('gulp'),
+    glob = require('glob'),
     bump = require('gulp-bump'),
     debug = require('gulp-debug'),
     ccompiler = require('gulp-closure-compiler'),
@@ -14,10 +15,6 @@ var gulp = require('gulp'),
     sequence = require('run-sequence'),
     path = require('path'),
     karma = require('karma').server,
-    webserver = require('gulp-webserver'),
-    protractor = require('gulp-protractor').protractor,
-    webdriverStandalone = require('gulp-protractor').webdriver_standalone,
-    webdriverUpdate = require('gulp-protractor').webdriver_update,
     coveralls = require('gulp-coveralls'),
     allowedLevels = ['major', 'minor', 'patch', 'prerelease'],
     allowedEnvironments = ['production', 'development'],
@@ -115,12 +112,11 @@ gulp = gulp = require('gulp-help')(gulp, {
  * prefixes: {dev: string},
  * output: {minified: string, sourcemap: string},
  * externs: string[],
- * sources: *[],
- * release: string
+ * sources: *[]
  * }}
  */
 var settings = {
-  compiler: 'bower_components/closure-compiler/compiler.jar',
+  compiler: glob.sync('bower_components/closure-compiler/*.jar'),
   prefixes: {
     dev: 'dev.'
   },
@@ -137,9 +133,8 @@ var settings = {
     'bower_components/closure-library/closure/goog/base.js',
   ],
   sources: [
-    bundle.directories.source + '/*.js'
-  ],
-  release: /** @type {string} */ (bundle.directories.release)
+    bundle.config.dir.source + '/*.js'
+  ]
 };
 
 gulp.task('lint', 'Lint JS source files', [], function() {
@@ -169,7 +164,7 @@ gulp.task('compile', false, [], function() {
     ],
     warning_level: 'VERBOSE'
   };
-  var dest = bundle.directories.dist;
+  var dest = bundle.config.dir.dist;
   if (!isProduction()) {
     var sourcemap = settings.prefixes.dev + settings.output.sourcemap;
     flags.create_source_map = path.join(dest, sourcemap);
@@ -186,13 +181,13 @@ gulp.task('compile', false, [], function() {
 
 // Fix the source array paths of sourcemap file
 gulp.task('fix-sourcemap', false, ['compile'], function() {
-  var file = path.join(bundle.directories.dist, settings.prefixes.dev + settings.output.sourcemap);
+  var file = path.join(bundle.config.dir.dist, settings.prefixes.dev + settings.output.sourcemap);
   return isProduction() ?
       true :
       gutil.log('Writing', file + '.fix') &&
       gulp.src(file)
           .pipe(jsonedit(function(json) {
-            var root = path.relative(bundle.directories.dist, './');
+            var root = path.relative(bundle.config.dir.dist, './');
             json['sources'] = json['sources'].map(function(o) {
               return path.join(root, o);
             });
@@ -206,14 +201,14 @@ gulp.task('fix-sourcemap', false, ['compile'], function() {
 });
 
 gulp.task('del-sourcemap', false, ['fix-sourcemap'], function() {
-  var file = path.join(bundle.directories.dist, settings.prefixes.dev + settings.output.sourcemap);
+  var file = path.join(bundle.config.dir.dist, settings.prefixes.dev + settings.output.sourcemap);
   return isProduction() ?
       true :
       gutil.log('Deleted', path.relative('./', del.sync([file])[0]));
 });
 
 gulp.task('upd-sourcemap', false, ['del-sourcemap'], function() {
-  var file = path.join(bundle.directories.dist, settings.prefixes.dev + settings.output.sourcemap);
+  var file = path.join(bundle.config.dir.dist, settings.prefixes.dev + settings.output.sourcemap);
   return isProduction() ?
       true :
       gutil.log('Copying', file + '.fix', 'to', file) &&
@@ -223,7 +218,7 @@ gulp.task('upd-sourcemap', false, ['del-sourcemap'], function() {
 });
 
 gulp.task('dist', false, ['upd-sourcemap'], function() {
-  var file = path.join(bundle.directories.dist, settings.prefixes.dev + settings.output.sourcemap);
+  var file = path.join(bundle.config.dir.dist, settings.prefixes.dev + settings.output.sourcemap);
   return isProduction() ?
       true :
       gutil.log('Deleted', path.relative('./', del.sync([file + '.fix'])[0]));
@@ -237,10 +232,10 @@ gulp.task('build', 'Build the library', [], function(cb) {
 
 gulp.task('clean', 'Clean build directory', function(cb) {
   var hello = [
-    path.join(bundle.directories.dist, (isProduction() ? '' : settings.prefixes.dev) + settings.output.minified)
+    path.join(bundle.config.dir.dist, (isProduction() ? '' : settings.prefixes.dev) + settings.output.minified)
   ];
   if (!isProduction()) {
-    hello.push(path.join(bundle.directories.dist, settings.prefixes.dev + settings.output.sourcemap));
+    hello.push(path.join(bundle.config.dir.dist, settings.prefixes.dev + settings.output.sourcemap));
   }
   hello.forEach(function(filepath) {
     gutil.log('Deleting', filepath);
@@ -258,42 +253,6 @@ gulp.task('bump', 'Bump version up for a new release', function() {
       .pipe(bump({ type: getLevel() }))
       .pipe(gulp.dest('./'));
 }, levelsHelp);
-
-gulp.task('karma', 'Run karma tests', [], function(done) {
-  karma.start(
-      {
-        configFile: __dirname + '/karma.conf.js',
-        singleRun: true
-      },
-      done
-  );
-});
-
-var stream;
-gulp.task('connect', false, [], function() {
-  stream = gulp.src(__dirname)
-      .pipe(webserver({
-        port: bundle.server.port,
-        directoryListing: true
-      }));
-});
-
-// Update/install webdriver
-gulp.task('webdriver:update', false, [], webdriverUpdate);
-
-// Run webdriver standalone server indefinitely. Usually not required.
-gulp.task('webdriver:standalone', false, ['webdriver:update'], webdriverStandalone);
-
-gulp.task('protractor', 'Run protractor E2E tests', ['connect', 'webdriver:update'], function() {
-  gulp.src(bundle.directories.e2e + '/**.scenario.js')
-      .pipe((protractor({
-        configFile: __dirname + '/protractor.conf.js'
-      })).on('error', function(e) {
-        throw e;
-      })).on('end', function() {
-        stream.emit('kill');
-      });
-});
 
 gulp.task('coveralls', false, [], function() {
   return gulp.src('coverage/lcov.info')
